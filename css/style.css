@@ -375,7 +375,12 @@ button {
   transform: scale(1.1);
 }
 
-.paste-action,
+.paste-action {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #fff;
+}
+
 .primary-action {
   min-height: 96px;
   border-radius: 14px;
@@ -391,6 +396,13 @@ button {
   background: #22c55e;
   border-color: #22c55e;
   color: #000;
+}
+
+.btnSaveOrder.order-dirty {
+  background: #f5ca0b;
+  border-color: #f5ca0b;
+  color: #000;
+  box-shadow: 0 0 18px rgba(245, 202, 11, 0.35);
 }
 
 .primary-action {
