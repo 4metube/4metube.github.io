@@ -340,7 +340,7 @@ button {
 
 .upload-grid {
   display: grid;
-  grid-template-columns: 150px 1fr;
+  grid-template-columns: 150px 1fr 1fr;
   gap: 10px;
   margin-top: 10px;
   align-items: stretch;
@@ -368,10 +368,28 @@ button {
   transform: scale(1.1);
 }
 
+.paste-action,
 .primary-action {
   min-height: 96px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  color: #fff;
+  padding: 0 14px;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.paste-action {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #000;
+}
+
+.primary-action {
   background: var(--accent);
   border-color: var(--accent);
+  color: #fff;
   font-size: 18px;
 }
 
@@ -618,8 +636,20 @@ button {
 }
 
   .upload-grid {
-    grid-template-columns: 128px 1fr;
-  }
+  grid-template-columns: 118px 1fr 1fr;
+  gap: 8px;
+}
+
+.paste-action,
+.primary-action {
+  min-height: 84px;
+  padding: 0 8px;
+  font-size: 14px;
+}
+
+.primary-action {
+  font-size: 16px;
+}
 
   .video-card,
   .manage-card {
