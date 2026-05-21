@@ -10,12 +10,12 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "image/4metube_icon_192.png",
+      "src": "image/4metube_logo_192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "image/4metube_icon_512.png",
+      "src": "image/4metube_logo_512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
