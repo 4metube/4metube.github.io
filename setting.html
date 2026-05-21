@@ -13,6 +13,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="image/4metube_icon_192.png" />
   <link rel="apple-touch-icon" href="image/4metube_icon_192.png" />
 </head>
+
 <body class="page page-setting">
   <main class="sub-page">
     <div class="top-logo-row">
@@ -30,40 +31,57 @@
 
     <section class="panel upload-panel">
       <label class="field-label" for="urlInput">YouTube URL</label>
-      <textarea id="urlInput" class="url-input" rows="4" placeholder="한 줄에 URL 1개씩 입력&#10;https://youtu.be/...&#10;https://www.youtube.com/watch?v=..."></textarea>
+      <textarea
+        id="urlInput"
+        class="url-input"
+        rows="4"
+        placeholder="한 줄에 URL 1개씩 입력&#10;https://youtu.be/...&#10;https://www.youtube.com/watch?v=..."
+      ></textarea>
 
-     <div class="upload-grid">
-  <div class="radio-stack">
-    <label class="pill-radio">
-      <input type="radio" name="position" value="top" checked />
-      먼저
-    </label>
-    <label class="pill-radio">
-      <input type="radio" name="position" value="bottom" />
-      나중
-    </label>
-  </div>
+      <div class="upload-grid">
+        <div class="radio-stack">
+          <label class="pill-radio">
+            <input type="radio" name="position" value="top" checked />
+            먼저
+          </label>
+          <label class="pill-radio">
+            <input type="radio" name="position" value="bottom" />
+            나중
+          </label>
+        </div>
 
-  <button id="btnPaste" class="paste-action" type="button">클립보드<br />붙여넣기</button>
-  <button id="btnUpload" class="primary-action" type="button">등록</button>
-</div>
+        <button id="btnPaste" class="paste-action" type="button">클립보드<br />붙여넣기</button>
+        <button id="btnUpload" class="primary-action" type="button">등록</button>
+      </div>
 
       <p id="msg" class="msg"></p>
     </section>
 
     <section class="panel manage-panel">
-      <div class="manage-actions">
-        <button id="btnDelete" class="danger-btn" type="button">삭제</button>
-        <button id="btnSaveOrder" class="normal-btn" type="button">순서 확정</button>
+      <div class="manage-actions order-actions">
+        <button class="btnDelete danger-btn" type="button">삭제</button>
+        <button class="btnMoveUp normal-btn move-btn" type="button" aria-label="위로 이동">↑</button>
+        <button class="btnMoveDown normal-btn move-btn" type="button" aria-label="아래로 이동">↓</button>
+        <button class="btnSaveOrder normal-btn" type="button">순서 확정</button>
       </div>
 
       <section id="manageList" class="manage-list" aria-live="polite"></section>
 
-      <div class="bottom-actions" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;">
+      <div class="manage-actions order-actions bottom-order-actions">
+        <button class="btnDelete danger-btn" type="button">삭제</button>
+        <button class="btnMoveUp normal-btn move-btn" type="button" aria-label="위로 이동">↑</button>
+        <button class="btnMoveDown normal-btn move-btn" type="button" aria-label="아래로 이동">↓</button>
+        <button class="btnSaveOrder normal-btn" type="button">순서 확정</button>
+      </div>
+
+      <div class="bottom-actions">
         <button id="btnCopyUrls" class="normal-btn" type="button">영상 목록 복사</button>
         <button id="btnUndo" class="normal-btn" type="button">되돌리기</button>
       </div>
-      <p class="help-text">카드를 2초간 누른 뒤 위아래로 움직이면 순서를 바꿀 수 있습니다.</p>
+
+      <p class="help-text">
+        체크한 영상을 ↑ / ↓ 버튼으로 이동한 뒤, 순서 확정을 누르면 저장됩니다.
+      </p>
     </section>
   </main>
 
