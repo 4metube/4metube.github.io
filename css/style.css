@@ -78,8 +78,8 @@ button {
 }
 
 .big-logo img {
-  height: 72px;
-  max-width: 86vw;
+  height: 144px;
+  max-width: 92vw;
 }
 
 .list-toggle-wrap {
@@ -111,20 +111,35 @@ button {
   min-height: 92px;
   border: 0;
   border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff, #cfcfcf);
+  background: transparent;
   color: #000;
   font-size: 36px;
   font-weight: 1000;
   letter-spacing: 0.06em;
-  box-shadow:
-    0 18px 44px rgba(255,255,255,0.13),
-    inset 0 -4px 0 rgba(0,0,0,0.18);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-play-button {
+  width: min(360px, 88vw);
+  min-height: auto;
+  background: transparent;
+  box-shadow: none;
+}
+
+.play-button-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 110px;
+  object-fit: contain;
 }
 
 .play-button:active {
   transform: translateY(2px) scale(0.99);
 }
-
 .switch-row {
   display: inline-flex;
   align-items: center;
@@ -586,7 +601,7 @@ button {
 
 @media (max-width: 420px) {
   .big-logo img {
-    height: 58px;
+    height: 116px;
   }
 
   .logo-button img {
@@ -594,9 +609,13 @@ button {
   }
 
   .play-button {
-    min-height: 84px;
-    font-size: 32px;
-  }
+  min-height: auto;
+  font-size: 32px;
+}
+
+.play-button-img {
+  max-height: 100px;
+}
 
   .upload-grid {
     grid-template-columns: 128px 1fr;
