@@ -24,6 +24,7 @@ const btnEditName = document.getElementById("btnEditName");
 const btnSaveName = document.getElementById("btnSaveName");
 
 const urlInput = document.getElementById("urlInput");
+const btnPaste = document.getElementById("btnPaste");
 const btnUpload = document.getElementById("btnUpload");
 const msg = document.getElementById("msg");
 
@@ -52,6 +53,36 @@ function parseUrlLines() {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+async function pasteFromClipboard() {
+  try {
+    if (!navigator.clipboard || !window.isSecureContext) {
+      setMsg("클립보드 접근이 제한되었습니다. 입력창을 눌러 직접 Ctrl+V 또는 붙여넣기를 사용하세요.");
+      urlInput.focus();
+      return;
+    }
+
+    const text = await navigator.clipboard.readText();
+
+    if (!text.trim()) {
+      setMsg("클립보드가 비어 있습니다.");
+      urlInput.focus();
+      return;
+    }
+
+    const current = urlInput.value.trim();
+
+    urlInput.value = current
+      ? current + "\n" + text.trim()
+      : text.trim();
+
+    urlInput.focus();
+    setMsg("클립보드 내용을 붙여넣었습니다.");
+  } catch {
+    setMsg("클립보드 읽기가 차단되었습니다. 입력창을 눌러 직접 Ctrl+V 또는 붙여넣기를 사용하세요.");
+    urlInput.focus();
+  }
 }
 
 async function uploadUrls() {
@@ -294,7 +325,8 @@ nameInput.addEventListener("keydown", (e) => {
   }
 });
 
-/* 업로드/삭제/순서/복사/되돌리기 */
+/* 붙여넣기/등록/삭제/순서/복사/되돌리기 */
+btnPaste.addEventListener("click", pasteFromClipboard);
 btnUpload.addEventListener("click", uploadUrls);
 btnDelete.addEventListener("click", deleteSelected);
 btnSaveOrder.addEventListener("click", saveCurrentOrder);
