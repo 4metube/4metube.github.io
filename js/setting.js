@@ -31,6 +31,7 @@ const manageList = document.getElementById("manageList");
 const btnDelete = document.getElementById("btnDelete");
 const btnSaveOrder = document.getElementById("btnSaveOrder");
 const btnUndo = document.getElementById("btnUndo");
+const btnCopyUrls = document.getElementById("btnCopyUrls");
 
 let orderDirty = false;
 
@@ -213,6 +214,57 @@ function undoList() {
   setMsg("이전 목록과 바꾸었습니다.");
 }
 
+async function copyCurrentUrls() {
+  const items = readList(activeList);
+  const urls = items
+    .map((item) => String(item.url || "").trim())
+    .filter(Boolean);
+
+  if (!urls.length) {
+    setMsg("복사할 URL이 없습니다.");
+    return;
+  }
+
+  const text = urls.join("\n");
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      fallbackCopyText(text);
+    }
+
+    setMsg(`영상 URL ${urls.length}개를 클립보드에 복사했습니다.`);
+  } catch {
+    try {
+      fallbackCopyText(text);
+      setMsg(`영상 URL ${urls.length}개를 클립보드에 복사했습니다.`);
+    } catch {
+      setMsg("클립보드 복사에 실패했습니다. 브라우저 권한을 확인하세요.");
+    }
+  }
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const ok = document.execCommand("copy");
+  document.body.removeChild(textarea);
+
+  if (!ok) {
+    throw new Error("copy failed");
+  }
+}
+
 /* 이름 변경 */
 btnEditName.addEventListener("click", () => {
   listTitle.classList.add("hidden");
@@ -242,10 +294,11 @@ nameInput.addEventListener("keydown", (e) => {
   }
 });
 
-/* 업로드/삭제/순서/되돌리기 */
+/* 업로드/삭제/순서/복사/되돌리기 */
 btnUpload.addEventListener("click", uploadUrls);
 btnDelete.addEventListener("click", deleteSelected);
 btnSaveOrder.addEventListener("click", saveCurrentOrder);
+btnCopyUrls.addEventListener("click", copyCurrentUrls);
 btnUndo.addEventListener("click", undoList);
 
 document.getElementById("logoHome")?.addEventListener("click", () => {
