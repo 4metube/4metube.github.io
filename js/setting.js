@@ -34,6 +34,12 @@ const btnCopyUrls = document.getElementById("btnCopyUrls");
 
 let orderDirty = false;
 
+function updateOrderButtons() {
+  document.querySelectorAll(".btnSaveOrder").forEach((btn) => {
+    btn.classList.toggle("order-dirty", orderDirty);
+  });
+}
+
 function setMsg(text) {
   if (msg) msg.textContent = text || "";
 }
@@ -143,6 +149,7 @@ function renderManageList() {
   const items = readList(activeList);
   manageList.replaceChildren();
   orderDirty = false;
+  updateOrderButtons();
 
   if (!items.length) {
     const empty = document.createElement("div");
@@ -256,9 +263,10 @@ function moveSelectedUp() {
     return;
   }
 
-  applyCardOrder(cards);
-  orderDirty = true;
-  setMsg("선택한 영상이 위로 이동했습니다. 저장하려면 순서 확정을 누르세요.");
+applyCardOrder(cards);
+orderDirty = true;
+updateOrderButtons();
+setMsg("선택한 영상이 아래로 이동했습니다. 저장하려면 순서 확정을 누르세요.");
 }
 
 function moveSelectedDown() {
@@ -293,9 +301,10 @@ function moveSelectedDown() {
     return;
   }
 
-  applyCardOrder(cards);
-  orderDirty = true;
-  setMsg("선택한 영상이 아래로 이동했습니다. 저장하려면 순서 확정을 누르세요.");
+applyCardOrder(cards);
+orderDirty = true;
+updateOrderButtons();
+setMsg("선택한 영상이 위로 이동했습니다. 저장하려면 순서 확정을 누르세요.");
 }
 
 function deleteSelected() {
@@ -338,10 +347,18 @@ function saveCurrentOrder() {
     return;
   }
 
+  // localStorage 저장 규칙:
+  // 1) 현재 list를 먼저 prelist로 백업
+  // 2) 바뀐 순서를 list에 저장
   writeList(activeList, next, { backup: true });
+
+  const wasDirty = orderDirty;
+  orderDirty = false;
+  updateOrderButtons();
+
   renderManageList();
 
-  if (orderDirty) {
+  if (wasDirty) {
     setMsg("순서가 저장되었습니다.");
   } else {
     setMsg("현재 순서를 다시 저장했습니다.");
