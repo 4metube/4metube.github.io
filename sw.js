@@ -1,4 +1,4 @@
-const CACHE_NAME = "4metube-v1";
+const CACHE_NAME = "4metube-v2";
 
 const APP_SHELL = [
   "./",
@@ -15,7 +15,8 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./image/4metube_logo_side.png",
   "./image/4metube_icon_192.png",
-  "./image/4metube_icon_512.png"
+  "./image/4metube_icon_512.png",
+  "./image/play_button.png"
 ];
 
 self.addEventListener("install", (event) => {
