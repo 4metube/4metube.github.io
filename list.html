@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>List - 4metube</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+
+  <link rel="icon" type="image/png" sizes="192x192" href="image/4metube_icon_192.png" />
+  <link rel="apple-touch-icon" href="image/4metube_icon_192.png" />
+</head>
+<body class="page page-list">
+  <main class="sub-page">
+    <div class="top-logo-row">
+      <button id="logoHome" class="logo-button" type="button" aria-label="메인으로 이동">
+        <img src="image/4metube_logo_side.png" alt="4metube" />
+      </button>
+    </div>
+
+    <section class="title-row">
+      <h1 id="listTitle">List</h1>
+    </section>
+
+    <p id="msg" class="msg"></p>
+
+    <section id="cards" class="cards" aria-live="polite"></section>
+  </main>
+
+  <script type="module" src="js/list.js"></script>
+</body>
+</html>
