@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Setting - 4metube</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+
+  <link rel="icon" type="image/png" sizes="192x192" href="image/4metube_icon_192.png" />
+  <link rel="apple-touch-icon" href="image/4metube_icon_192.png" />
+</head>
+<body class="page page-setting">
+  <main class="sub-page">
+    <div class="top-logo-row">
+      <button id="logoHome" class="logo-button" type="button" aria-label="메인으로 이동">
+        <img src="image/4metube_logo_side.png" alt="4metube" />
+      </button>
+    </div>
+
+    <section class="title-row editable-title-row">
+      <h1 id="listTitle">List</h1>
+      <input id="nameInput" class="name-input hidden" type="text" maxlength="20" />
+      <button id="btnEditName" class="icon-btn" type="button" aria-label="리스트 이름 수정">✎</button>
+      <button id="btnSaveName" class="confirm-btn" type="button" disabled>확인</button>
+    </section>
+
+    <section class="panel upload-panel">
+      <label class="field-label" for="urlInput">YouTube URL</label>
+      <textarea id="urlInput" class="url-input" rows="4" placeholder="한 줄에 URL 1개씩 입력&#10;https://youtu.be/...&#10;https://www.youtube.com/watch?v=..."></textarea>
+
+      <div class="upload-grid">
+        <div class="radio-stack">
+          <label class="pill-radio">
+            <input type="radio" name="position" value="top" checked />
+            먼저
+          </label>
+          <label class="pill-radio">
+            <input type="radio" name="position" value="bottom" />
+            나중
+          </label>
+        </div>
+
+        <button id="btnUpload" class="primary-action" type="button">업로드</button>
+      </div>
+
+      <p id="msg" class="msg"></p>
+    </section>
+
+    <section class="panel manage-panel">
+      <div class="manage-actions">
+        <button id="btnDelete" class="danger-btn" type="button">삭제</button>
+        <button id="btnSaveOrder" class="normal-btn" type="button">순서 확정</button>
+      </div>
+
+      <section id="manageList" class="manage-list" aria-live="polite"></section>
+
+      <button id="btnUndo" class="undo-btn" type="button">되돌리기</button>
+      <p class="help-text">카드를 2초간 누른 뒤 위아래로 움직이면 순서를 바꿀 수 있습니다.</p>
+    </section>
+  </main>
+
+  <script type="module" src="js/setting.js"></script>
+</body>
+</html>
