@@ -2,7 +2,6 @@ import {
   ensureDefaults,
   registerServiceWorker,
   getActiveList,
-  getListName,
   readList,
   getAutoNext,
   extractYouTubeId,
@@ -12,212 +11,450 @@ import {
 ensureDefaults();
 registerServiceWorker();
 
+/* ---------- viewport fix: CopyTube 방식 ---------- */
+function updateVh() {
+  document.documentElement.style.setProperty("--app-vh", `${window.innerHeight}px`);
+}
+
+updateVh();
+window.addEventListener("resize", updateVh, { passive: true });
+window.addEventListener("orientationchange", updateVh, { passive: true });
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", updateVh, { passive: true });
+}
+
+/* ---------- Samsung Internet 보정 ---------- */
+const isSamsungInternet = /SamsungBrowser/i.test(navigator.userAgent);
+
+if (isSamsungInternet) {
+  document.documentElement.classList.add("ua-sbrowser");
+}
+
+function updateSnapHeightForSamsung() {
+  if (!isSamsungInternet) return;
+
+  const vc = document.getElementById("videoContainer");
+  if (!vc) return;
+
+  const h = vc.clientHeight;
+  document.documentElement.style.setProperty("--snap-h", `${h}px`);
+}
+
+updateSnapHeightForSamsung();
+window.addEventListener("resize", updateSnapHeightForSamsung, { passive: true });
+window.addEventListener("orientationchange", updateSnapHeightForSamsung, { passive: true });
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", updateSnapHeightForSamsung, { passive: true });
+}
+
+/* ---------- DOM / data ---------- */
+const videoContainer = document.getElementById("videoContainer");
+
 const activeList = getActiveList();
 const items = readList(activeList);
 
-const watchInfo = document.getElementById("watchInfo");
-const tapToPlay = document.getElementById("tapToPlay");
+let currentActive = null;
+let userSoundConsent = false;
+let AUTO_NEXT = getAutoNext();
 
-let player = null;
-let currentIndex = getStartIndex();
-let ready = false;
+const winToCard = new Map();
+const YT_ID_SAFE = /^[a-zA-Z0-9_-]{6,20}$/;
+
+/* ---------- URL / params ---------- */
+function getParam(name) {
+  try {
+    return new URL(location.href).searchParams.get(name);
+  } catch {
+    return null;
+  }
+}
 
 function getStartIndex() {
-  const params = new URLSearchParams(location.search);
-  const idx = Number(params.get("idx") || "0");
+  const raw = Number(getParam("idx") || "0");
 
-  if (!Number.isInteger(idx)) return 0;
-  if (idx < 0) return 0;
-  if (idx >= items.length) return Math.max(0, items.length - 1);
+  if (!Number.isInteger(raw)) return 0;
+  if (raw < 0) return 0;
+  if (raw >= items.length) return Math.max(0, items.length - 1);
 
-  return idx;
+  return raw;
 }
 
-function showInfo(text) {
-  if (watchInfo) watchInfo.textContent = text || "";
+function safeExtractYouTubeId(url) {
+  const id = extractYouTubeId(url);
+  return YT_ID_SAFE.test(id) ? id : "";
 }
 
-function currentItem() {
-  return items[currentIndex] || null;
+/* ---------- YouTube postMessage control ---------- */
+function ytCmd(iframe, func, args = []) {
+  if (!iframe?.contentWindow) return;
+
+  iframe.contentWindow.postMessage(
+    JSON.stringify({
+      event: "command",
+      func,
+      args,
+    }),
+    "*"
+  );
 }
 
-function currentVideoId() {
-  return extractYouTubeId(currentItem()?.url || "");
-}
+function applyAudioPolicy(iframe) {
+  if (!iframe) return;
 
-function updateInfo() {
-  const item = currentItem();
-
-  if (!item) {
-    showInfo("저장된 영상이 없습니다.");
-    return;
-  }
-
-  const title = item.title || "(제목 없음)";
-  showInfo(`${getListName(activeList)} · ${currentIndex + 1}/${items.length} · ${title}`);
-}
-
-function loadCurrentVideo() {
-  const id = currentVideoId();
-
-  updateInfo();
-
-  if (!id) {
-    showInfo("재생할 수 없는 URL입니다.");
-    return;
-  }
-
-  if (!player || !ready) return;
-
-  try {
-    player.loadVideoById(id);
-    setTimeout(() => {
-      try {
-        player.playVideo();
-      } catch {}
-    }, 250);
-  } catch {
-    tapToPlay.classList.remove("hidden");
+  if (userSoundConsent) {
+    ytCmd(iframe, "setVolume", [100]);
+    ytCmd(iframe, "unMute");
+  } else {
+    ytCmd(iframe, "mute");
   }
 }
 
-function goNext() {
-  if (currentIndex >= items.length - 1) {
-    updateInfo();
-    return;
-  }
+function grantSoundFromCard() {
+  userSoundConsent = true;
 
-  currentIndex += 1;
-  history.replaceState(null, "", `watch.html?idx=${currentIndex}`);
-  loadCurrentVideo();
-}
-
-function goPrev() {
-  if (currentIndex <= 0) {
-    updateInfo();
-    return;
-  }
-
-  currentIndex -= 1;
-  history.replaceState(null, "", `watch.html?idx=${currentIndex}`);
-  loadCurrentVideo();
-}
-
-window.onYouTubeIframeAPIReady = function () {
-  if (!items.length) {
-    showInfo("저장된 영상이 없습니다.");
-    tapToPlay.classList.add("hidden");
-    return;
-  }
-
-  const firstId = currentVideoId();
-
-  player = new YT.Player("ytPlayer", {
-    width: "100%",
-    height: "100%",
-    videoId: firstId,
-    playerVars: {
-      autoplay: 1,
-      playsinline: 1,
-      rel: 0,
-      modestbranding: 1,
-      controls: 1,
-    },
-    events: {
-      onReady: () => {
-        ready = true;
-        updateInfo();
-
-        try {
-          player.playVideo();
-          tapToPlay.classList.remove("hidden");
-        } catch {
-          tapToPlay.classList.remove("hidden");
-        }
-      },
-      onStateChange: (event) => {
-        if (event.data === YT.PlayerState.PLAYING) {
-          tapToPlay.classList.add("hidden");
-        }
-
-        if (event.data === YT.PlayerState.ENDED && getAutoNext()) {
-          goNext();
-        }
-      },
-      onError: () => {
-        tapToPlay.classList.remove("hidden");
-        showInfo("영상을 재생할 수 없습니다. 위로 스와이프하면 다음 영상으로 이동합니다.");
-      },
-    },
+  document.querySelectorAll(".gesture-capture").forEach((el) => {
+    el.classList.add("hidden");
   });
-};
 
-tapToPlay.addEventListener("click", () => {
-  if (!player) return;
+  document.querySelectorAll(".sound-tip").forEach((el) => {
+    el.classList.add("hidden");
+  });
+
+  const iframe = currentActive?.querySelector("iframe");
+
+  if (iframe) {
+    ytCmd(iframe, "setVolume", [100]);
+    ytCmd(iframe, "unMute");
+    ytCmd(iframe, "playVideo");
+  }
+}
+
+/* ---------- player events ---------- */
+window.addEventListener("message", (e) => {
+  if (typeof e.data !== "string") return;
+
+  let data;
 
   try {
-    player.unMute?.();
-    player.playVideo();
-    tapToPlay.classList.add("hidden");
+    data = JSON.parse(e.data);
   } catch {
-    tapToPlay.classList.remove("hidden");
+    return;
   }
+
+  if (!data?.event) return;
+
+  if (data.event === "onReady") {
+    const card = winToCard.get(e.source);
+    if (!card) return;
+
+    const iframe = card.querySelector("iframe");
+    if (!iframe) return;
+
+    if (card === currentActive) {
+      applyAudioPolicy(iframe);
+      ytCmd(iframe, "playVideo");
+    } else {
+      ytCmd(iframe, "mute");
+      ytCmd(iframe, "pauseVideo");
+    }
+
+    return;
+  }
+
+  if (data.event === "onStateChange" && data.info === 0) {
+    const card = winToCard.get(e.source);
+    if (!card) return;
+
+    const activeIframe = currentActive?.querySelector("iframe");
+
+    if (activeIframe && e.source === activeIframe.contentWindow && AUTO_NEXT) {
+      goToNextCard();
+    }
+  }
+}, false);
+
+/* ---------- card creation ---------- */
+function makeInfoRow(text) {
+  const row = document.createElement("div");
+  row.className = "empty-row";
+  row.textContent = text;
+  return row;
+}
+
+function makeCard(item, index) {
+  const id = safeExtractYouTubeId(item?.url || "");
+  if (!id) return null;
+
+  const card = document.createElement("section");
+  card.className = "video";
+  card.dataset.vid = id;
+  card.dataset.index = String(index);
+  card.dataset.url = item.url || "";
+
+  const thumb = document.createElement("div");
+  thumb.className = "thumb";
+
+  const img = document.createElement("img");
+  img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  img.alt = item.title || "thumbnail";
+  img.loading = "lazy";
+  thumb.appendChild(img);
+
+  const hint = document.createElement("div");
+  hint.className = "playhint";
+  hint.textContent = "위로 스와이프 · 아래로 이전";
+  thumb.appendChild(hint);
+
+  card.appendChild(thumb);
+
+  const soundTip = document.createElement("div");
+  soundTip.className = `sound-tip ${userSoundConsent ? "hidden" : ""}`;
+  soundTip.textContent = "탭하면 소리 허용";
+  card.appendChild(soundTip);
+
+  const gesture = document.createElement("div");
+  gesture.className = `gesture-capture ${userSoundConsent ? "hidden" : ""}`;
+  gesture.setAttribute("aria-label", "tap to enable sound");
+  gesture.addEventListener("pointerdown", grantSoundFromCard, { passive: true });
+  card.appendChild(gesture);
+
+  activeIO.observe(card);
+
+  return card;
+}
+
+function ensureIframe(card, preload = false) {
+  if (!card || card.querySelector("iframe")) return;
+
+  const id = card.dataset.vid;
+  if (!YT_ID_SAFE.test(id)) return;
+
+  const origin = encodeURIComponent(location.origin);
+  const playerId = `yt-${id}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const iframe = document.createElement("iframe");
+  iframe.id = playerId;
+  iframe.src =
+    `https://www.youtube.com/embed/${id}` +
+    `?enablejsapi=1` +
+    `&playsinline=1` +
+    `&autoplay=1` +
+    `&mute=1` +
+    `&rel=0` +
+    `&controls=1` +
+    `&modestbranding=1` +
+    `&origin=${origin}` +
+    `&widget_referrer=${encodeURIComponent(location.href)}` +
+    `&playerapiid=${encodeURIComponent(playerId)}`;
+
+  iframe.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  iframe.allowFullscreen = true;
+  iframe.setAttribute("allowfullscreen", "");
+  iframe.setAttribute("title", "YouTube video player");
+
+  iframe.addEventListener("load", () => {
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({
+          event: "listening",
+          id: playerId,
+        }),
+        "*"
+      );
+
+      ytCmd(iframe, "addEventListener", ["onReady"]);
+      ytCmd(iframe, "addEventListener", ["onStateChange"]);
+
+      winToCard.set(iframe.contentWindow, card);
+
+      if (preload) {
+        ytCmd(iframe, "mute");
+        ytCmd(iframe, "pauseVideo");
+      }
+    } catch {}
+  });
+
+  const thumb = card.querySelector(".thumb");
+
+  if (thumb) {
+    card.replaceChild(iframe, thumb);
+  } else {
+    card.appendChild(iframe);
+  }
+}
+
+/* ---------- IntersectionObserver: 현재 영상만 재생 ---------- */
+const activeIO = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    const card = entry.target;
+    const iframe = card.querySelector("iframe");
+
+    if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+      if (currentActive && currentActive !== card) {
+        const prev = currentActive.querySelector("iframe");
+
+        if (prev) {
+          ytCmd(prev, "mute");
+          ytCmd(prev, "pauseVideo");
+        }
+      }
+
+      currentActive = card;
+      ensureIframe(card);
+
+      const currentIframe = card.querySelector("iframe");
+
+      if (currentIframe) {
+        applyAudioPolicy(currentIframe);
+        ytCmd(currentIframe, "playVideo");
+      }
+
+      const index = Number(card.dataset.index || "0");
+      sessionStorage.setItem("4metube:playIndex", String(index));
+
+      try {
+        history.replaceState(history.state, "", `watch.html?idx=${index}`);
+      } catch {}
+
+      const next = card.nextElementSibling;
+      if (next && next.classList.contains("video")) {
+        ensureIframe(next, true);
+      }
+
+      const prev = card.previousElementSibling;
+      if (prev && prev.classList.contains("video")) {
+        ensureIframe(prev, true);
+      }
+    } else {
+      if (iframe) {
+        ytCmd(iframe, "mute");
+        ytCmd(iframe, "pauseVideo");
+      }
+    }
+  });
+}, {
+  root: videoContainer,
+  threshold: [0, 0.6, 1],
 });
 
-/* 위로 스와이프 = 다음 / 아래로 스와이프 = 이전 */
-let sy = 0;
-let sx = 0;
-let startTime = 0;
+/* ---------- movement ---------- */
+function getCurrentIndex() {
+  if (!currentActive) return getStartIndex();
 
-function point(e) {
-  return e.touches?.[0] || e.changedTouches?.[0] || e;
+  const idx = Number(currentActive.dataset.index || "0");
+  return Number.isInteger(idx) ? idx : 0;
 }
 
-document.addEventListener("touchstart", (e) => {
-  const p = point(e);
-  sx = p.clientX;
-  sy = p.clientY;
-  startTime = Date.now();
-}, { passive: true });
+function scrollToIndex(index, behavior = "smooth") {
+  const cards = Array.from(videoContainer.querySelectorAll(".video"));
+  const target = cards[index];
 
-document.addEventListener("touchend", (e) => {
-  const p = point(e);
-  const dx = p.clientX - sx;
-  const dy = p.clientY - sy;
-  const dt = Date.now() - startTime;
+  if (!target) return;
 
-  if (dt > 800) return;
-  if (Math.abs(dx) > 90) return;
-  if (Math.abs(dy) < 70) return;
+  target.scrollIntoView({
+    behavior,
+    block: "start",
+  });
+}
 
-  if (dy < 0) {
-    goNext();
-  } else {
-    goPrev();
-  }
-}, { passive: true });
+function goToNextCard() {
+  const idx = getCurrentIndex();
 
-/* 키보드 보조 */
-document.addEventListener("keydown", (e) => {
+  if (idx >= items.length - 1) return;
+
+  scrollToIndex(idx + 1, "smooth");
+}
+
+function goToPrevCard() {
+  const idx = getCurrentIndex();
+
+  if (idx <= 0) return;
+
+  scrollToIndex(idx - 1, "smooth");
+}
+
+/* ---------- keyboard helper ---------- */
+window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowUp" || e.key === "ArrowRight") {
-    goNext();
+    goToNextCard();
   } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
-    goPrev();
+    goToPrevCard();
   } else if (e.key === "Escape") {
     location.href = getReturnPage();
   }
 });
 
-/* 안드로이드/브라우저 뒤로가기 보강 */
-(function setupBackGuard() {
+/* ---------- browser/android back guard ---------- */
+function setupBackGuard() {
   const returnPage = getReturnPage();
 
-  history.replaceState({ page: "watch" }, "", location.href);
-  history.pushState({ page: "watch-guard" }, "", location.href);
+  try {
+    history.replaceState({ page: "watch-base" }, "", location.href);
+    history.pushState({ page: "watch-guard" }, "", location.href);
 
-  window.addEventListener("popstate", () => {
-    location.replace(returnPage);
+    window.addEventListener("popstate", () => {
+      location.replace(returnPage);
+    });
+  } catch {}
+}
+
+/* ---------- start ---------- */
+function renderFeed() {
+  videoContainer.replaceChildren();
+
+  if (!items.length) {
+    videoContainer.appendChild(
+      makeInfoRow("저장된 영상이 없습니다. Setting에서 URL을 먼저 등록하세요.")
+    );
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  items.forEach((item, index) => {
+    const card = makeCard(item, index);
+
+    if (card) {
+      frag.appendChild(card);
+    }
   });
-})();
 
-updateInfo();
+  if (!frag.childNodes.length) {
+    videoContainer.appendChild(
+      makeInfoRow("재생 가능한 YouTube URL이 없습니다.")
+    );
+    return;
+  }
+
+  videoContainer.appendChild(frag);
+}
+
+function startAtInitialIndex() {
+  const startIndex = getStartIndex();
+
+  requestAnimationFrame(() => {
+    scrollToIndex(startIndex, "auto");
+
+    const cards = Array.from(videoContainer.querySelectorAll(".video"));
+    const target = cards[startIndex];
+
+    if (target) {
+      currentActive = target;
+      ensureIframe(target);
+    }
+
+    updateSnapHeightForSamsung();
+  });
+}
+
+window.addEventListener("storage", (e) => {
+  if (e.key === "4metube:autonext") {
+    AUTO_NEXT = getAutoNext();
+  }
+});
+
+renderFeed();
+setupBackGuard();
+startAtInitialIndex();
