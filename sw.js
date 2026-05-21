@@ -1,4 +1,4 @@
-const CACHE_NAME = "4metube-v2";
+const CACHE_NAME = "4metube-v3";
 
 const APP_SHELL = [
   "./",
