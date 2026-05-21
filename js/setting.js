@@ -29,8 +29,6 @@ const btnUpload = document.getElementById("btnUpload");
 const msg = document.getElementById("msg");
 
 const manageList = document.getElementById("manageList");
-const btnDelete = document.getElementById("btnDelete");
-const btnSaveOrder = document.getElementById("btnSaveOrder");
 const btnUndo = document.getElementById("btnUndo");
 const btnCopyUrls = document.getElementById("btnCopyUrls");
 
@@ -123,7 +121,7 @@ async function uploadUrls() {
     return;
   }
 
-  const current = readList(activeList);
+  const current = getCurrentVisibleItems();
   const position = getPositionValue();
 
   const next = position === "top"
@@ -195,48 +193,159 @@ function renderManageList() {
   });
 
   manageList.appendChild(frag);
-  initLongPressReorder();
+}
+
+function getCards() {
+  return Array.from(manageList.querySelectorAll(".manage-card"));
+}
+
+function getCurrentVisibleItems() {
+  const savedItems = readList(activeList);
+
+  return getCards()
+    .map((card) => {
+      const index = Number(card.dataset.index);
+      return savedItems[index];
+    })
+    .filter(Boolean);
+}
+
+function getSelectedCards() {
+  return getCards().filter((card) => {
+    return card.querySelector(".delete-check")?.checked;
+  });
+}
+
+function hasSelectedCard() {
+  return getSelectedCards().length > 0;
+}
+
+function applyCardOrder(cards) {
+  manageList.replaceChildren(...cards);
+}
+
+function moveSelectedUp() {
+  const cards = getCards();
+
+  if (!cards.length) {
+    setMsg("이동할 영상이 없습니다.");
+    return;
+  }
+
+  if (!hasSelectedCard()) {
+    setMsg("이동할 영상을 체크하세요.");
+    return;
+  }
+
+  let moved = false;
+
+  for (let i = 1; i < cards.length; i++) {
+    const currentChecked = cards[i].querySelector(".delete-check")?.checked;
+    const prevChecked = cards[i - 1].querySelector(".delete-check")?.checked;
+
+    if (currentChecked && !prevChecked) {
+      const temp = cards[i - 1];
+      cards[i - 1] = cards[i];
+      cards[i] = temp;
+      moved = true;
+    }
+  }
+
+  if (!moved) {
+    setMsg("더 위로 이동할 수 없습니다.");
+    return;
+  }
+
+  applyCardOrder(cards);
+  orderDirty = true;
+  setMsg("선택한 영상이 위로 이동했습니다. 저장하려면 순서 확정을 누르세요.");
+}
+
+function moveSelectedDown() {
+  const cards = getCards();
+
+  if (!cards.length) {
+    setMsg("이동할 영상이 없습니다.");
+    return;
+  }
+
+  if (!hasSelectedCard()) {
+    setMsg("이동할 영상을 체크하세요.");
+    return;
+  }
+
+  let moved = false;
+
+  for (let i = cards.length - 2; i >= 0; i--) {
+    const currentChecked = cards[i].querySelector(".delete-check")?.checked;
+    const nextChecked = cards[i + 1].querySelector(".delete-check")?.checked;
+
+    if (currentChecked && !nextChecked) {
+      const temp = cards[i + 1];
+      cards[i + 1] = cards[i];
+      cards[i] = temp;
+      moved = true;
+    }
+  }
+
+  if (!moved) {
+    setMsg("더 아래로 이동할 수 없습니다.");
+    return;
+  }
+
+  applyCardOrder(cards);
+  orderDirty = true;
+  setMsg("선택한 영상이 아래로 이동했습니다. 저장하려면 순서 확정을 누르세요.");
 }
 
 function deleteSelected() {
-  const items = readList(activeList);
-  const selected = Array.from(manageList.querySelectorAll(".manage-card"))
-    .filter((card) => card.querySelector(".delete-check")?.checked)
-    .map((card) => Number(card.dataset.index));
+  const cards = getCards();
 
-  if (!selected.length) {
-    setMsg("선택된 항목이 없습니다.");
+  if (!cards.length) {
+    setMsg("삭제할 영상이 없습니다.");
     return;
   }
 
-  const selectedSet = new Set(selected);
-  const next = items.filter((_, index) => !selectedSet.has(index));
+  const selectedCount = cards.filter((card) => {
+    return card.querySelector(".delete-check")?.checked;
+  }).length;
 
-  writeList(activeList, next, { backup: true });
-  renderManageList();
-
-  setMsg(`삭제 완료: ${selected.length}개`);
-}
-
-function saveCurrentOrder() {
-  const items = readList(activeList);
-  const orderedIndexes = Array.from(manageList.querySelectorAll(".manage-card"))
-    .map((card) => Number(card.dataset.index))
-    .filter((n) => Number.isInteger(n));
-
-  if (!orderedIndexes.length) {
-    setMsg("저장할 목록이 없습니다.");
+  if (!selectedCount) {
+    setMsg("삭제할 영상을 체크하세요.");
     return;
   }
 
-  const next = orderedIndexes
-    .map((index) => items[index])
+  const visibleItems = getCurrentVisibleItems();
+
+  const next = cards
+    .map((card, orderIndex) => {
+      const checked = card.querySelector(".delete-check")?.checked;
+      return checked ? null : visibleItems[orderIndex];
+    })
     .filter(Boolean);
 
   writeList(activeList, next, { backup: true });
   renderManageList();
 
-  setMsg("순서가 저장되었습니다.");
+  setMsg(`삭제 완료: ${selectedCount}개`);
+}
+
+function saveCurrentOrder() {
+  const next = getCurrentVisibleItems();
+
+  if (!next.length) {
+    setMsg("저장할 목록이 없습니다.");
+    return;
+  }
+
+  writeList(activeList, next, { backup: true });
+  renderManageList();
+
+  if (orderDirty) {
+    setMsg("순서가 저장되었습니다.");
+  } else {
+    setMsg("현재 순서를 다시 저장했습니다.");
+  }
 }
 
 function undoList() {
@@ -246,7 +355,7 @@ function undoList() {
 }
 
 async function copyCurrentUrls() {
-  const items = readList(activeList);
+  const items = getCurrentVisibleItems();
   const urls = items
     .map((item) => String(item.url || "").trim())
     .filter(Boolean);
@@ -325,131 +434,34 @@ nameInput.addEventListener("keydown", (e) => {
   }
 });
 
-/* 붙여넣기/등록/삭제/순서/복사/되돌리기 */
+/* 붙여넣기/등록 */
 btnPaste.addEventListener("click", pasteFromClipboard);
 btnUpload.addEventListener("click", uploadUrls);
-btnDelete.addEventListener("click", deleteSelected);
-btnSaveOrder.addEventListener("click", saveCurrentOrder);
+
+/* 위쪽/아래쪽 공통 버튼 */
+document.querySelectorAll(".btnDelete").forEach((btn) => {
+  btn.addEventListener("click", deleteSelected);
+});
+
+document.querySelectorAll(".btnMoveUp").forEach((btn) => {
+  btn.addEventListener("click", moveSelectedUp);
+});
+
+document.querySelectorAll(".btnMoveDown").forEach((btn) => {
+  btn.addEventListener("click", moveSelectedDown);
+});
+
+document.querySelectorAll(".btnSaveOrder").forEach((btn) => {
+  btn.addEventListener("click", saveCurrentOrder);
+});
+
+/* 복사/되돌리기 */
 btnCopyUrls.addEventListener("click", copyCurrentUrls);
 btnUndo.addEventListener("click", undoList);
 
 document.getElementById("logoHome")?.addEventListener("click", () => {
   location.href = "index.html";
 });
-
-/* 2초 롱프레스 순서변경 */
-function initLongPressReorder() {
-  const cards = Array.from(manageList.querySelectorAll(".manage-card"));
-
-  let pressTimer = null;
-  let dragging = null;
-  let startX = 0;
-  let startY = 0;
-  let activated = false;
-
-  function clearPressTimer() {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
-    }
-  }
-
-  function getPoint(e) {
-    return e.touches?.[0] || e.changedTouches?.[0] || e;
-  }
-
-  function getAfterElement(container, y) {
-    const draggableElements = [
-      ...container.querySelectorAll(".manage-card:not(.dragging)"),
-    ];
-
-    return draggableElements.reduce(
-      (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-
-        if (offset < 0 && offset > closest.offset) {
-          return { offset, element: child };
-        }
-
-        return closest;
-      },
-      { offset: Number.NEGATIVE_INFINITY, element: null }
-    ).element;
-  }
-
-  cards.forEach((card) => {
-    card.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("input,button,label")) return;
-
-      const p = getPoint(e);
-      startX = p.clientX;
-      startY = p.clientY;
-      activated = false;
-
-      clearPressTimer();
-
-      pressTimer = setTimeout(() => {
-        activated = true;
-        dragging = card;
-        card.classList.add("dragging");
-        card.setPointerCapture?.(e.pointerId);
-        setMsg("순서 변경 중입니다. 원하는 위치에서 손을 떼세요.");
-      }, 2000);
-    });
-
-    card.addEventListener("pointermove", (e) => {
-      const p = getPoint(e);
-      const dx = Math.abs(p.clientX - startX);
-      const dy = Math.abs(p.clientY - startY);
-
-      if (!activated && (dx > 10 || dy > 10)) {
-        clearPressTimer();
-        return;
-      }
-
-      if (!activated || !dragging) return;
-
-      e.preventDefault();
-
-      const afterElement = getAfterElement(manageList, p.clientY);
-
-      if (afterElement == null) {
-        manageList.appendChild(dragging);
-      } else {
-        manageList.insertBefore(dragging, afterElement);
-      }
-
-      orderDirty = true;
-    });
-
-    card.addEventListener("pointerup", () => {
-      clearPressTimer();
-
-      if (dragging) {
-        dragging.classList.remove("dragging");
-        dragging = null;
-      }
-
-      if (orderDirty) {
-        setMsg("순서가 임시 변경되었습니다. ‘순서 확정’을 누르면 저장됩니다.");
-      }
-
-      activated = false;
-    });
-
-    card.addEventListener("pointercancel", () => {
-      clearPressTimer();
-
-      if (dragging) {
-        dragging.classList.remove("dragging");
-        dragging = null;
-      }
-
-      activated = false;
-    });
-  });
-}
 
 refreshTitle();
 renderManageList();
