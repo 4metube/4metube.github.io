@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Watch - 4metube</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+
+  <link rel="icon" type="image/png" sizes="192x192" href="image/4metube_icon_192.png" />
+  <link rel="apple-touch-icon" href="image/4metube_icon_192.png" />
+</head>
+<body class="page-watch">
+  <main id="watchStage" class="watch-stage">
+    <div id="playerBox" class="player-box">
+      <div id="ytPlayer"></div>
+    </div>
+
+    <button id="tapToPlay" class="tap-to-play hidden" type="button">
+      탭하여 재생
+    </button>
+
+    <div id="watchInfo" class="watch-info"></div>
+  </main>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script type="module" src="js/watch.js"></script>
+</body>
+</html>
