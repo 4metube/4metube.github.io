@@ -1,1 +1,52 @@
-Hello World
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>4metube</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#000000" />
+
+  <link rel="icon" type="image/png" sizes="192x192" href="image/4metube_icon_192.png" />
+  <link rel="apple-touch-icon" href="image/4metube_icon_192.png" />
+</head>
+<body class="page page-index">
+  <main class="main-screen">
+    <button id="logoHome" class="logo-button big-logo" type="button" aria-label="4metube 홈">
+      <img src="image/4metube_logo_side.png" alt="4metube" />
+    </button>
+
+    <section class="list-toggle-wrap" aria-label="리스트 선택">
+      <button class="list-toggle" data-list="list1" type="button">List1</button>
+      <button class="list-toggle" data-list="list2" type="button">List2</button>
+      <button class="list-toggle" data-list="list3" type="button">List3</button>
+    </section>
+
+    <button id="btnPlay" class="play-button" type="button">PLAY</button>
+
+    <label class="switch-row">
+      <span>연속재생</span>
+      <input id="autoNextToggle" type="checkbox" />
+      <span class="switch-ui" aria-hidden="true"></span>
+    </label>
+
+    <nav class="bottom-nav">
+      <button id="btnGoList" class="nav-arrow left" type="button">
+        <span class="arrow-mark">‹</span>
+        <span>List</span>
+      </button>
+
+      <button id="btnGoSetting" class="nav-arrow right" type="button">
+        <span>Setting</span>
+        <span class="arrow-mark">›</span>
+      </button>
+    </nav>
+
+    <p id="msg" class="msg center"></p>
+  </main>
+
+  <script type="module" src="js/index.js"></script>
+</body>
+</html>
