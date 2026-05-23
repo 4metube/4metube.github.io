@@ -1,8 +1,8 @@
 const LIST_KEYS = ["list1", "list2", "list3"];
 
-const PRESET_VERSION = "v1";
+const PRESET_VERSION = "v2";
 const PRESET_FILE = "./presetlist.txt";
-const PRESET_TARGET_LIST = "list1";
+const PRESET_TARGET_LIST = "list3";
 const PRESET_TARGET_NAME = "스트레칭";
 
 const KEYS = {
@@ -73,8 +73,8 @@ export async function applyPresetListOnce() {
   }
 
   // 사용자가 이미 list1에 영상을 넣은 상태라면 절대 덮어쓰지 않음
-  const currentList1 = readList(PRESET_TARGET_LIST);
-  if (currentList1.length > 0) {
+  const currentPresetList = readList(PRESET_TARGET_LIST);
+  if (currentPresetList.length > 0) {
     localStorage.setItem(KEYS.presetApplied, "1");
     return false;
   }
