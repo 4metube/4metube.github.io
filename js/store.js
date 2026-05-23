@@ -1,10 +1,16 @@
 const LIST_KEYS = ["list1", "list2", "list3"];
 
+const PRESET_VERSION = "v1";
+const PRESET_FILE = "./presetlist.txt";
+const PRESET_TARGET_LIST = "list1";
+const PRESET_TARGET_NAME = "스트레칭";
+
 const KEYS = {
   activeList: "4metube:activeList",
   listNames: "4metube:listNames",
   autoNext: "4metube:autonext",
   returnPage: "4metube:returnPage",
+  presetApplied: `4metube:presetApplied:${PRESET_VERSION}`,
 };
 
 const defaultNames = {
@@ -53,6 +59,69 @@ export function ensureDefaults() {
   if (!localStorage.getItem(KEYS.autoNext)) {
     localStorage.setItem(KEYS.autoNext, "1");
   }
+}
+
+export async function initializeAppData() {
+  ensureDefaults();
+  await applyPresetListOnce();
+}
+
+export async function applyPresetListOnce() {
+  // 이미 preset을 적용한 적이 있으면 다시 적용하지 않음
+  if (localStorage.getItem(KEYS.presetApplied) === "1") {
+    return false;
+  }
+
+  // 사용자가 이미 list1에 영상을 넣은 상태라면 절대 덮어쓰지 않음
+  const currentList1 = readList(PRESET_TARGET_LIST);
+  if (currentList1.length > 0) {
+    localStorage.setItem(KEYS.presetApplied, "1");
+    return false;
+  }
+
+  let text = "";
+
+  try {
+    const res = await fetch(PRESET_FILE, { cache: "no-cache" });
+    if (!res.ok) return false;
+    text = await res.text();
+  } catch {
+    return false;
+  }
+
+  const urls = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .map((line) => normalizeYouTubeUrl(line))
+    .filter(Boolean);
+
+  const uniqueUrls = [...new Set(urls)];
+
+  if (!uniqueUrls.length) {
+    return false;
+  }
+
+  const presetItems = await Promise.all(
+    uniqueUrls.map(async (url) => {
+      const title = await fetchYouTubeTitle(url);
+      return {
+        url,
+        title,
+      };
+    })
+  );
+
+  // 최초 preset은 사용자의 이전 목록을 백업할 필요가 없으므로 backup:false
+  writeList(PRESET_TARGET_LIST, presetItems, { backup: false });
+
+  // list1 이름도 최초 1회만 "스트레칭"으로 변경
+  setListName(PRESET_TARGET_LIST, PRESET_TARGET_NAME);
+
+  // 이후 앱 실행 때 다시 presetlist.txt로 덮어쓰지 않게 표시
+  localStorage.setItem(KEYS.presetApplied, "1");
+
+  return true;
 }
 
 export function listStorageKey(listKey) {
