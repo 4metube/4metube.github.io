@@ -1,5 +1,5 @@
 import {
-  ensureDefaults,
+  initializeAppData,
   registerServiceWorker,
   getActiveList,
   setActiveList,
@@ -13,7 +13,7 @@ import {
   goWithSlide,
 } from "./store.js";
 
-ensureDefaults();
+await initializeAppData();
 registerServiceWorker();
 
 const msg = document.getElementById("msg");
