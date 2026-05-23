@@ -1,5 +1,5 @@
 import {
-  ensureDefaults,
+  initializeAppData,
   registerServiceWorker,
   getActiveList,
   getListName,
@@ -9,7 +9,7 @@ import {
   initPageSwipe,
 } from "./store.js";
 
-ensureDefaults();
+await initializeAppData();
 registerServiceWorker();
 
 const activeList = getActiveList();
