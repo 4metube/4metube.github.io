@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./list.html",
   "./setting.html",
   "./watch.html",
+  "./presetlist.txt",
   "./css/style.css",
   "./js/store.js",
   "./js/index.js",
